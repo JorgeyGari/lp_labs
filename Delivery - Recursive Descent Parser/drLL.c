@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define T_NUMBER 1001
 #define T_OPERATOR 1002
@@ -59,43 +60,68 @@ void MatchSymbol(int expected_token) {
     }
 }
 
-#define ParseLParen()                                                          \
-  MatchSymbol('('); // More concise and efficient definitions
-#define ParseRParen() MatchSymbol(')'); // rather than using functions
-// This is only useful for matching Literals
+#define ParseLParen() MatchSymbol('(');
+#define ParseRParen() MatchSymbol(')');
 
-int ParseNumber() // Parsing Non Terminals and some Tokens require more
-{                 // complex functions
+int ParseNumber() {
+    int val = number;
     MatchSymbol(T_NUMBER);
-    return number;
+    return val;
 }
 
-int ParseParam()
+int ParseOperator() {
+    if (token == T_OPERATOR) {
+        int op = token_val;
+        token = rd_lex();
+        return op;
+    } else {
+        rd_syntax_error(T_OPERATOR, token, "token %d expected, but %d was read\n");
+    }
+}
+
+int ParseParameter()    // P ::= E | N
 {
-    if (token == T_NUMBER) {
+    if (token == T_NUMBER)  // P ::= N
+    {
         return ParseNumber();
     }
 
+    // P ::= E
     ParseExpression();
 }
 
-int ParseExpression() {
-    if (token == T_NUMBER) {
+int ParseExpression()   // E ::= (O P P) | N
+{
+    if (token == T_NUMBER)  // E ::= N
+    {
         return ParseNumber();
     }
 
+    // E ::= (O P P)
     ParseLParen()
-    MatchSymbol(T_OPERATOR);
-    ParseParam();
-    ParseParam();
+    int op = ParseOperator();
+    int a = ParseParameter();
+    int b = ParseParameter();
+    printf("%d %c %d\n", a, op, b);
     ParseRParen()
+
+    switch (op) {
+        case '+':
+            return a + b;
+        case '-':
+            return a - b;
+        case '*':
+            return a * b;
+        case '/':
+            return a / b;
+    }
 }
 
 int main(void) {
 
     while (1) {
         rd_lex();
-        printf("    OK\n", ParseExpression());
+        printf("%d\n", ParseExpression());
     }
 
     system("PAUSE");
