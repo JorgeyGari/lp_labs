@@ -9,6 +9,7 @@
 
 #define T_NUMBER 1001
 #define T_OPERATOR 1002
+#define T_VARIABLE 1003
 
 int ParseExpression(); // Prototype for forward reference
 
@@ -69,6 +70,17 @@ int ParseNumber() {
     return val;
 }
 
+int ParseAxiom() {
+    if (token == T_NUMBER)  // S ::= N
+    {
+        return ParseNumber();
+    }
+
+    // S ::= E
+    int val = ParseExpression();
+    return val;
+}
+
 int ParseOperator() {
     if (token == T_OPERATOR) {
         int op = token_val;
@@ -90,19 +102,13 @@ int ParseParameter()    // P ::= E | N
     ParseExpression();
 }
 
-int ParseExpression()   // E ::= (O P P) | N
+int ParseExpression()   // E ::= (O P P)
 {
-    if (token == T_NUMBER)  // E ::= N
-    {
-        return ParseNumber();
-    }
-
     // E ::= (O P P)
     ParseLParen()
     int op = ParseOperator();
     int a = ParseParameter();
     int b = ParseParameter();
-    printf("%d %c %d\n", a, op, b);
     ParseRParen()
 
     switch (op) {
@@ -121,7 +127,7 @@ int main(void) {
 
     while (1) {
         rd_lex();
-        printf("%d\n", ParseExpression());
+        printf("Value: %d\n", ParseAxiom());
     }
 
     system("PAUSE");
