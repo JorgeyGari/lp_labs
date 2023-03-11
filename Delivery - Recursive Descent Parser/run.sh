@@ -1,4 +1,3 @@
 #!/bin/sh
-bison drLL.y -d
-gcc drLL.tab.c -o drLL
+gcc drLL.c -o drLL
 ./drLL
