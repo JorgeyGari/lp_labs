@@ -15,8 +15,11 @@ int ParseExpression(); // Prototype for forward reference
 
 int token;     // Here we store the current token/literal
 int number;    // the value of the number
+char letter;   // the value of the variable
 int token_val; // or the arithmetic operator
 // TODO: Pack these variables in a struct
+
+int variables[52];  // Array of variables
 
 int line_counter = 1;
 
@@ -25,6 +28,7 @@ int rd_lex() {
 
     do {
         c = getchar();
+        // printf("c: %c\n", c);
         if (c == '\n')
             line_counter++; // info for rd_syntax_error()
     } while (c == ' ' || c == '\t');
@@ -34,6 +38,13 @@ int rd_lex() {
         scanf("%d", &number);
         token = T_NUMBER;
         return (token); // returns the Token for Number
+    }
+
+    if (isalpha(c)) {
+        ungetc(c, stdin);
+        scanf("%c", &letter);
+        token = T_VARIABLE;
+        return (token); // returns the Token for Variable
     }
 
     if (c == '+' || c == '-' || c == '*' || c == '/') {
@@ -70,10 +81,21 @@ int ParseNumber() {
     return val;
 }
 
+int ParseVariable() {
+    int val = variables[token - 'A'];
+    MatchSymbol(T_VARIABLE);
+    return val;
+}
+
 int ParseAxiom() {
     if (token == T_NUMBER)  // S ::= N
     {
         return ParseNumber();
+    }
+
+    if (token == T_VARIABLE)  // S ::= V
+    {
+        return ParseVariable();
     }
 
     // S ::= E
@@ -102,24 +124,39 @@ int ParseParameter()    // P ::= E | N
     ParseExpression();
 }
 
-int ParseExpression()   // E ::= (O P P)
+int ParseA()
 {
-    // E ::= (O P P)
+    if (token == T_OPERATOR) {  // A ::= O P
+        ParseOperator();
+        return ParseParameter();
+    }
+    else {  // A ::= ! V
+        MatchSymbol('!');
+        return ParseVariable();
+    }
+}
+
+int ParseLeftExpr()    // L ::= ( A
+{
     ParseLParen()
-    int op = ParseOperator();
-    int a = ParseParameter();
-    int b = ParseParameter();
+    ParseA();
+}
+
+int ParseExpression()   // E ::= L P )
+{
+    int left = ParseLeftExpr();
+    int right = ParseParameter();
     ParseRParen()
 
-    switch (op) {
+    switch (token_val) {
         case '+':
-            return a + b;
+            return left + right;
         case '-':
-            return a - b;
+            return left - right;
         case '*':
-            return a * b;
+            return left * right;
         case '/':
-            return a / b;
+            return left / right;
     }
 }
 
