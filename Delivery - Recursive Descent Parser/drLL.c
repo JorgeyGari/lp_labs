@@ -13,13 +13,15 @@
 
 int ParseExpression(); // Prototype for forward reference
 
+int ParseA();
+
 int token;     // Here we store the current token/literal
 int number;    // the value of the number
-char letter;   // the value of the variable
+char letter;   // the index of the variable
 int token_val; // or the arithmetic operator
 // TODO: Pack these variables in a struct
 
-int variables[52];  // Array of variables
+int variables[57];  // Array of variables
 
 int line_counter = 1;
 
@@ -28,7 +30,6 @@ int rd_lex() {
 
     do {
         c = getchar();
-        // printf("c: %c\n", c);
         if (c == '\n')
             line_counter++; // info for rd_syntax_error()
     } while (c == ' ' || c == '\t');
@@ -81,26 +82,14 @@ int ParseNumber() {
     return val;
 }
 
-int ParseVariable() {
-    int val = variables[token - 'A'];
+int ParseVariable() {   // Returns the index of the variable
+    int index = letter - 65;
     MatchSymbol(T_VARIABLE);
-    return val;
+    return index;
 }
 
-int ParseAxiom() {
-    if (token == T_NUMBER)  // S ::= N
-    {
-        return ParseNumber();
-    }
-
-    if (token == T_VARIABLE)  // S ::= V
-    {
-        return ParseVariable();
-    }
-
-    // S ::= E
-    int val = ParseExpression();
-    return val;
+int ParseAxiom() {  // S ::= E
+    return ParseExpression();
 }
 
 int ParseOperator() {
@@ -113,51 +102,53 @@ int ParseOperator() {
     }
 }
 
-int ParseParameter()    // P ::= E | N
+int ParseExpression()
 {
-    if (token == T_NUMBER)  // P ::= N
+    if (token == T_NUMBER)      // E ::= N
     {
         return ParseNumber();
     }
 
-    // P ::= E
-    ParseExpression();
-}
-
-int ParseA()
-{
-    if (token == T_OPERATOR) {  // A ::= O P
-        ParseOperator();
-        return ParseParameter();
+    if (token == T_VARIABLE)    // E ::= V
+    {
+        int var = ParseVariable();
+        return variables[var];
     }
-    else {  // A ::= ! V
-        MatchSymbol('!');
-        return ParseVariable();
-    }
-}
 
-int ParseLeftExpr()    // L ::= ( A
-{
+    // E ::= ( A
     ParseLParen()
-    ParseA();
+    return ParseA();
 }
 
-int ParseExpression()   // E ::= L P )
-{
-    int left = ParseLeftExpr();
-    int right = ParseParameter();
-    ParseRParen()
-
-    switch (token_val) {
-        case '+':
-            return left + right;
-        case '-':
-            return left - right;
-        case '*':
-            return left * right;
-        case '/':
-            return left / right;
+int ParseA() {
+    if (token == T_OPERATOR)    // A ::= O E E )
+    {
+        int op = ParseOperator();
+        int val1 = ParseExpression();
+        int val2 = ParseExpression();
+        printf("Operation: %d %c %d\n", val1, op, val2);
+        ParseRParen()
+        switch (op) {
+            case '+':
+                return val1 + val2;
+            case '-':
+                return val1 - val2;
+            case '*':
+                return val1 * val2;
+            case '/':
+                return val1 / val2;
+            default:
+                rd_syntax_error(T_OPERATOR, token, "token %d expected, but %d was read\n");
+        }
     }
+
+    // A ::= ! V E )
+    MatchSymbol('!');
+    letter = ParseVariable();
+    int num = ParseExpression();
+    variables[letter] = num;
+    ParseRParen()
+    return num;
 }
 
 int main(void) {
