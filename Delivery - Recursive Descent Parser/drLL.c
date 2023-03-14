@@ -76,13 +76,13 @@ void MatchSymbol(int expected_token) {
 #define ParseLParen() MatchSymbol('(');
 #define ParseRParen() MatchSymbol(')');
 
-int ParseNumber() {
+int ParseNumber() { // Returns the value of the number
     int val = number;
     MatchSymbol(T_NUMBER);
     return val;
 }
 
-int ParseVariable() {   // Returns the index of the variable
+int ParseVariable() {   // Returns the index of the variable (A = 0, B = 1, ...)
     int index = letter - 65;
     MatchSymbol(T_VARIABLE);
     return index;
@@ -92,7 +92,7 @@ int ParseAxiom() {  // S ::= E
     return ParseExpression();
 }
 
-int ParseOperator() {
+int ParseOperator() {   // Returns the operator (char)
     if (token == T_OPERATOR) {
         int op = token_val;
         token = rd_lex();
@@ -126,7 +126,6 @@ int ParseA() {
         int op = ParseOperator();
         int val1 = ParseExpression();
         int val2 = ParseExpression();
-        printf("Operation: %d %c %d\n", val1, op, val2);
         ParseRParen()
         switch (op) {
             case '+':
