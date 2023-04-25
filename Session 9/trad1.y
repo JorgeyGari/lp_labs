@@ -34,8 +34,7 @@ typedef struct s_attr {
 %token STRING        // token for string type
 %token MAIN          // token for keyword main 
 %token WHILE         // token for keyword while
-%token INT	   // token for keyword int
-%token PUTS	   // token for keyword puts
+%token PUTS          // token for keyword puts
 
 
 // Definitions for implicit attributes.
@@ -68,82 +67,104 @@ typedef struct s_attr {
 
 %%                            // Section 3 Grammar - Semantic Actions
 
-axiom:	    MAIN '(' ')' '{' bbody '}'		{ printf ("(defun main ()\n%s\n)\n", $5.code) ;
-					  $$.code = gen_code (temp) ; }
+axiom:  
+        MAIN '(' ')' '{' bbody '}'              { printf ("(defun main ()\n%s\n)\n", $5.code) ;
+					                            $$.code = gen_code (temp) ; }
+
 	    | bdeclare MAIN '(' ')' '{' bbody '}'	{ printf ("%s \n (defun main ()\n%s\n)\n", $1.code, $6.code) ;
-					  $$.code = gen_code (temp) ; }
+					                            $$.code = gen_code (temp) ; }
 	    ;
 
-bbody:     body ';'				{ sprintf (temp, "%s ", $1.code) ;
-						$$.code = gen_code (temp) ; }
-	    | body ';' bbody			{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+bbody:  
+        body ';'                { sprintf (temp, "%s ", $1.code) ;
+						        $$.code = gen_code (temp) ; }
+
+	    | body ';' bbody		{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+						        $$.code = gen_code (temp) ; }
+	    ;
+
+body:
+        sentence        { sprintf (temp, "%s ", $1.code) ;
 						$$.code = gen_code (temp) ; }
 	    ;
 
-body:       sentence				{ sprintf (temp, "%s ", $1.code) ;
-						$$.code = gen_code (temp) ; }
-	    ;
-
-bdeclare:   declare ';'				{ sprintf (temp, "%s ", $1.code) ;
-                                        	$$.code = gen_code (temp) ; }
+bdeclare:
+        declare ';'				    { sprintf (temp, "%s ", $1.code) ;
+                                    $$.code = gen_code (temp) ; }
 	    | declare ';' bdeclare		{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
-						$$.code = gen_code (temp) ; }
+						            $$.code = gen_code (temp) ; }
 	    ;
 
 declare:
-	    | INT IDENTIF 			{ sprintf (temp, "(setq %s 0)", $2.code) ;
-					       $$.code = gen_code (temp) ; }
-	    | INT IDENTIF '=' NUMBER 		{ sprintf (temp, "(setq %s %d)", $2.code, $4.value) ;
-					       $$.code = gen_code (temp) ; }
+
+	    | INTEGER IDENTIF 			        { sprintf (temp, "(setq %s 0)", $2.code) ;
+					                        $$.code = gen_code (temp) ; }
+
+	    | INTEGER IDENTIF '=' NUMBER        { sprintf (temp, "(setq %s %d)", $2.code, $4.value) ;
+					                        $$.code = gen_code (temp) ; }
 	    ;
 
-sentence:     INT IDENTIF '=' assign      	{ sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
-                                               $$.code = gen_code (temp) ; }
+sentence:
+        INTEGER IDENTIF '=' assign          { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
+                                        $$.code = gen_code (temp) ; }
 
-            | '$' '(' lexpression ')'         	{ sprintf (temp, "%s ", $3.code) ;
-					       $$.code = gen_code (temp) ; }
+        | '$' '(' lexpression ')'       { sprintf (temp, "%s ", $3.code) ;
+                                        $$.code = gen_code (temp) ; }
 
-            | PUTS '(' STRING ')'		{ sprintf (temp, "(print \"%s\") ", $3.code) ;
-            					       $$.code = gen_code (temp) ; }
-            ;
+        | PUTS '(' STRING ')'           { sprintf (temp, "(print \"%s\") ", $3.code) ;
+                                        $$.code = gen_code (temp) ; }
+        ;
 
-assign: 	expression				{ sprintf (temp, "%s)", $1.code) ;
-					       $$.code = gen_code (temp) ; }
-	      | NUMBER ',' INT IDENTIF '=' assign	{ sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
-					       $$.code = gen_code (temp) ; }
+assign:
+        expression                              { sprintf (temp, "%s)", $1.code) ;
+					                            $$.code = gen_code (temp) ; }
+
+	    | NUMBER ',' INTEGER IDENTIF '=' assign     { sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
+					                            $$.code = gen_code (temp) ; }
 	    ;
           
-expression:   term                           { $$ = $1 ; }
+expression:
+            term                                { $$ = $1 ; }
 
-            | expression '+' expression      { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
-                                               $$.code = gen_code (temp) ; }
-            | expression '-' expression      { sprintf (temp, "(- %s %s)", $1.code, $3.code) ;
-                                               $$.code = gen_code (temp) ; }
-            | expression '*' expression      { sprintf (temp, "(* %s %s)", $1.code, $3.code) ;
-                                               $$.code = gen_code (temp) ; }
-            | expression '/' expression      { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
-                                               $$.code = gen_code (temp) ; }
+            | expression '+' expression         { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | expression '-' expression         { sprintf (temp, "(- %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | expression '*' expression         { sprintf (temp, "(* %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | expression '/' expression         { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
             ;
 
-lexpression:	expression 			{ sprintf (temp, "(print %s) ", $1.code) ;
-					       $$.code = gen_code (temp) ; }
-	    | expression ',' lexpression	{ sprintf (temp, "(print %s) %s ", $1.code, $3.code) ;
-					       $$.code = gen_code (temp) ; }
+lexpression:
+        expression 			                { sprintf (temp, "(print %s) ", $1.code) ;
+					                        $$.code = gen_code (temp) ; }
+
+	    | expression ',' lexpression	    { sprintf (temp, "(print %s) %s ", $1.code, $3.code) ;
+					                        $$.code = gen_code (temp) ; }
 	    ;
 
-term:         operand                        { $$ = $1 ; }
+term:
+            operand                             { $$ = $1 ; }
 
-            | '+' operand %prec UNARY_SIGN   { sprintf (temp, "(+ %s)", $2.code) ;
-                                               $$.code = gen_code (temp) ; }
-            | '-' operand %prec UNARY_SIGN   { sprintf (temp, "(- %s)", $2.code) ;
-                                               $$.code = gen_code (temp) ; }    
+            | '+' operand %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | '-' operand %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code) ;
+                                                $$.code = gen_code (temp) ; }    
             ;
 
-operand:      IDENTIF                        { sprintf (temp, "%s", $1.code) ;
-                                               $$ = $1 ; }
-            | NUMBER                         { sprintf (temp, "%d", $1.value) ;
-                                               $$.code = gen_code (temp) ; }
-            | '(' expression ')'             { $$ = $2 ; }
+operand:
+            IDENTIF                     { sprintf (temp, "%s", $1.code) ;
+                                        $$ = $1 ; }
+
+            | NUMBER                    { sprintf (temp, "%d", $1.value) ;
+                                        $$.code = gen_code (temp) ; }
+                                        
+            | '(' expression ')'        { $$ = $2 ; }
             ;
 
 
@@ -201,6 +222,7 @@ typedef struct s_keyword { // for the reserved words of C
 t_keyword keywords [] = {     // define the keywords 
     "main",        MAIN,      // and their associated token  
     "int",         INTEGER,
+    "puts",        PUTS,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
@@ -298,50 +320,6 @@ int yylex ()
         scanf ("%d", &yylval.value) ;
 //         printf ("\nDEV: NUMBER %d\n", yylval.value) ;
         return NUMBER ;
-    }
-
-        if (c == 'p') {
-            c = getchar();
-            if (c == 'u') {
-                c = getchar();
-                if (c == 't') {
-                    c = getchar();
-                    if (c == 's') {
-                        return PUTS;
-                    } else {
-                        ungetc(c, stdin);
-                        ungetc(c, stdin);
-                        ungetc(c, stdin);
-                    }
-                } else {
-                    ungetc(c, stdin);
-                    ungetc(c, stdin);
-                }
-            } else {
-                ungetc(c, stdin);
-            }
-        }
-
-    if (c == 'i') {
-            c = getchar();
-            if (c == 'n') {
-                c = getchar();
-                if (c == 't') {
-                    c = getchar();
-                    if (c == ' ') {
-                        return INT;
-                    } else {
-                        ungetc(c, stdin);
-                        ungetc(c, stdin);
-                        ungetc(c, stdin);
-                    }
-                } else {
-                    ungetc(c, stdin);
-                    ungetc(c, stdin);
-                }
-            } else {
-                ungetc(c, stdin);
-            }
     }
 
     if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
