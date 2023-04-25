@@ -35,6 +35,7 @@ typedef struct s_attr {
 %token MAIN          // token for keyword main 
 %token WHILE         // token for keyword while
 %token INT	   // token for keyword int
+%token PUTS	   // token for keyword puts
 
 
 // Definitions for implicit attributes.
@@ -101,6 +102,9 @@ sentence:     INT IDENTIF '=' assign      	{ sprintf (temp, "(setq %s %s", $2.co
 
             | '$' '(' lexpression ')'         	{ sprintf (temp, "%s ", $3.code) ;
 					       $$.code = gen_code (temp) ; }
+
+            | PUTS '(' STRING ')'		{ sprintf (temp, "(print \"%s\") ", $3.code) ;
+            					       $$.code = gen_code (temp) ; }
             ;
 
 assign: 	expression				{ sprintf (temp, "%s)", $1.code) ;
@@ -295,6 +299,28 @@ int yylex ()
 //         printf ("\nDEV: NUMBER %d\n", yylval.value) ;
         return NUMBER ;
     }
+
+        if (c == 'p') {
+            c = getchar();
+            if (c == 'u') {
+                c = getchar();
+                if (c == 't') {
+                    c = getchar();
+                    if (c == 's') {
+                        return PUTS;
+                    } else {
+                        ungetc(c, stdin);
+                        ungetc(c, stdin);
+                        ungetc(c, stdin);
+                    }
+                } else {
+                    ungetc(c, stdin);
+                    ungetc(c, stdin);
+                }
+            } else {
+                ungetc(c, stdin);
+            }
+        }
 
     if (c == 'i') {
             c = getchar();
