@@ -67,9 +67,9 @@ typedef struct s_attr {
 
 %%                            // Section 3 Grammar - Semantic Actions
 
-axiom:	    MAIN '(' ')' '{' bbody '}'		{ printf ("(defun main ()\n %s\n)\n", $5.code) ;
+axiom:	    MAIN '(' ')' '{' bbody '}'		{ printf ("(defun main ()\n%s\n)\n", $5.code) ;
 					  $$.code = gen_code (temp) ; }
-	    | bdeclare MAIN '(' ')' '{' bbody '}'	{ printf ("%s \n (defun main ()\n %s\n)\n", $1.code, $6.code) ;
+	    | bdeclare MAIN '(' ')' '{' bbody '}'	{ printf ("%s \n (defun main ()\n%s\n)\n", $1.code, $6.code) ;
 					  $$.code = gen_code (temp) ; }
 	    ;
 
@@ -96,12 +96,18 @@ declare:
 					       $$.code = gen_code (temp) ; }
 	    ;
 
-sentence:     INT IDENTIF '=' expression      	{ sprintf (temp, "(setq %s %s)", $2.code, $4.code) ;
+sentence:     INT IDENTIF '=' assign      	{ sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
                                                $$.code = gen_code (temp) ; }
 
             | '$' '(' lexpression ')'         	{ sprintf (temp, "%s ", $3.code) ;
 					       $$.code = gen_code (temp) ; }
             ;
+
+assign: 	expression				{ sprintf (temp, "%s)", $1.code) ;
+					       $$.code = gen_code (temp) ; }
+	      | NUMBER ',' INT IDENTIF '=' assign	{ sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
+					       $$.code = gen_code (temp) ; }
+	    ;
           
 expression:   term                           { $$ = $1 ; }
 
