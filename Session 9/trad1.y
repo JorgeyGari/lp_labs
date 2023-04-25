@@ -106,14 +106,14 @@ declare:
 	    ;
 
 sentence:
-        INTEGER IDENTIF '=' assign          { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
-                                            $$.code = gen_code (temp) ; }
+        INTEGER IDENTIF '=' assign                  { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
+                                                    $$.code = gen_code (temp) ; }
 
-        | PRINTF '(' lexpression ')'        { sprintf (temp, "%s ", $3.code) ;
-                                            $$.code = gen_code (temp) ; }
+        | PRINTF '(' STRING ',' lexpression ')'     { sprintf (temp, "%s ", $5.code) ;
+                                                    $$.code = gen_code (temp) ; }
 
-        | PUTS '(' STRING ')'               { sprintf (temp, "(print \"%s\") ", $3.code) ;
-                                            $$.code = gen_code (temp) ; }
+        | PUTS '(' STRING ')'                       { sprintf (temp, "(print \"%s\") ", $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
         ;
 
 assign:
@@ -150,7 +150,7 @@ lexpression:
 
 term:
             operand                             { $$ = $1 ; }
-            
+
             | '+' operand %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
                                                 $$.code = gen_code (temp) ; }
 
