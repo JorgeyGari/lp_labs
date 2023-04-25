@@ -35,6 +35,7 @@ typedef struct s_attr {
 %token MAIN          // token for keyword main 
 %token WHILE         // token for keyword while
 %token PUTS          // token for keyword puts
+%token PRINTF        // token for keyword printf
 
 
 // Definitions for implicit attributes.
@@ -106,21 +107,21 @@ declare:
 
 sentence:
         INTEGER IDENTIF '=' assign          { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
-                                        $$.code = gen_code (temp) ; }
+                                            $$.code = gen_code (temp) ; }
 
-        | '$' '(' lexpression ')'       { sprintf (temp, "%s ", $3.code) ;
-                                        $$.code = gen_code (temp) ; }
+        | PRINTF '(' lexpression ')'        { sprintf (temp, "%s ", $3.code) ;
+                                            $$.code = gen_code (temp) ; }
 
-        | PUTS '(' STRING ')'           { sprintf (temp, "(print \"%s\") ", $3.code) ;
-                                        $$.code = gen_code (temp) ; }
+        | PUTS '(' STRING ')'               { sprintf (temp, "(print \"%s\") ", $3.code) ;
+                                            $$.code = gen_code (temp) ; }
         ;
 
 assign:
-        expression                              { sprintf (temp, "%s)", $1.code) ;
-					                            $$.code = gen_code (temp) ; }
+        expression                                  { sprintf (temp, "%s)", $1.code) ;
+					                                $$.code = gen_code (temp) ; }
 
 	    | NUMBER ',' INTEGER IDENTIF '=' assign     { sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
-					                            $$.code = gen_code (temp) ; }
+					                                $$.code = gen_code (temp) ; }
 	    ;
           
 expression:
@@ -149,7 +150,7 @@ lexpression:
 
 term:
             operand                             { $$ = $1 ; }
-
+            
             | '+' operand %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
                                                 $$.code = gen_code (temp) ; }
 
@@ -223,6 +224,7 @@ t_keyword keywords [] = {     // define the keywords
     "main",        MAIN,      // and their associated token  
     "int",         INTEGER,
     "puts",        PUTS,
+    "printf",      PRINTF,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
