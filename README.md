@@ -6,5 +6,6 @@ Progressive development of a programmable calculator using C and Bison.
 * **Session 3:** Decomposition into *syntactic* and *lexical* levels
 * **Session 4:** Improvements in the calculator
 * **Session 5:** Use of simple variables in the calculator
+* **Session 9 onwards:** Development of the Final Assignment
 
 If you are a student who has been assigned this project as well, please **do not copy our work**. Only use it for guidance. We uploaded it to help future students, so we ask you to use it responsibly.
