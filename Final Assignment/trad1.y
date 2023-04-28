@@ -36,6 +36,14 @@ typedef struct s_attr {
 %token WHILE         // token for keyword while
 %token PUTS          // token for keyword puts
 %token PRINTF        // token for keyword printf
+%token LEQ           // token for <=
+%token GEQ           // token for >=
+%token EQ            // token for ==
+%token NEQ           // token for !=
+%token OR            // token for ||
+%token AND           // token for &&
+%token IF            // token for keyword if
+%token ELSE          // token for keyword else
 
 
 // Definitions for implicit attributes.
@@ -61,32 +69,23 @@ typedef struct s_attr {
 
 */
 
-%right '='                    // last opertation to do 
-%left '+' '-'                 // lowest precedence
-%left '*' '/'                 // 
-%left UNARY_SIGN              // highest precedence
+%right '='                      // lowest precedence 
+%left OR                        //
+%left AND                       //
+%left EQ NEQ                    //
+%left '<' '>' LEQ GEQ           //
+%left '+' '-'                   //
+%left '*' '/'                   // 
+%left UNARY_SIGN                // highest precedence
 
 %%                            // Section 3 Grammar - Semantic Actions
 
 axiom:  
-        MAIN '(' ')' '{' bbody '}'              { printf ("(defun main ()\n%s\n)\n", $5.code) ;
+        MAIN '(' ')' '{' body '}'              { printf ("(defun main ()\n%s\n)\n", $5.code) ;
 					                            $$.code = gen_code (temp) ; }
 
-	    | bdeclare MAIN '(' ')' '{' bbody '}'	{ printf ("%s \n (defun main ()\n%s\n)\n", $1.code, $6.code) ;
+	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s \n (defun main ()\n%s\n)\n", $1.code, $6.code) ;
 					                            $$.code = gen_code (temp) ; }
-	    ;
-
-bbody:  
-        body ';'                { sprintf (temp, "%s ", $1.code) ;
-						        $$.code = gen_code (temp) ; }
-
-	    | body ';' bbody		{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
-						        $$.code = gen_code (temp) ; }
-	    ;
-
-body:
-        sentence        { sprintf (temp, "%s ", $1.code) ;
-						$$.code = gen_code (temp) ; }
 	    ;
 
 bdeclare:
@@ -105,15 +104,32 @@ declare:
 					                        $$.code = gen_code (temp) ; }
 	    ;
 
+body:  
+        sentence ';'            { sprintf (temp, "%s ", $1.code) ;
+						        $$.code = gen_code (temp) ; }
+
+	    | sentence ';' body    { sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+						        $$.code = gen_code (temp) ; }
+
+        | control               { sprintf (temp, "%s ", $1.code) ;
+                                $$.code = gen_code (temp) ; }
+        
+        | control body         { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
+                                $$.code = gen_code (temp) ; }
+	    ;
+
 sentence:
-        INTEGER IDENTIF '=' assign                  { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
-                                                    $$.code = gen_code (temp) ; }
+        INTEGER IDENTIF                            { sprintf (temp, "(setq %s 0)", $2.code) ;
+                                                   $$.code = gen_code (temp) ; }
 
-        | PRINTF '(' STRING ',' lexpression ')'     { sprintf (temp, "%s ", $5.code) ;
-                                                    $$.code = gen_code (temp) ; }
+        | INTEGER IDENTIF '=' assign               { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
+                                                   $$.code = gen_code (temp) ; }
 
-        | PUTS '(' STRING ')'                       { sprintf (temp, "(print \"%s\") ", $3.code) ;
-                                                    $$.code = gen_code (temp) ; }
+        | PRINTF '(' STRING ',' lexpression ')'    { sprintf (temp, "%s ", $5.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | PUTS '(' STRING ')'                      { sprintf (temp, "(print \"%s\") ", $3.code) ;
+                                                   $$.code = gen_code (temp) ; }
         ;
 
 assign:
@@ -123,7 +139,47 @@ assign:
 	    | NUMBER ',' INTEGER IDENTIF '=' assign     { sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
 					                                $$.code = gen_code (temp) ; }
 	    ;
-          
+
+control:
+        WHILE '(' condition ')' '{' body '}'                        { sprintf (temp, "(loop while %s do %s\n)", $3.code, $6.code) ;
+                                                                    $$.code = gen_code (temp) ; }
+
+        | IF '(' condition ')' '{' body '}'                         { sprintf (temp, "(if %s\n%s\n)", $3.code, $6.code) ;
+                                                                    $$.code = gen_code (temp) ; }
+
+        | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n%s\n%s\n)", $3.code, $6.code, $10.code) ;
+                                                                    $$.code = gen_code (temp) ; }
+        ;
+
+condition:
+        expression                                  { sprintf (temp, "%s", $1.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression EQ expression                  { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression NEQ expression                 { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression '<' expression                 { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression '>' expression                 { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression LEQ expression                 { sprintf (temp, "(<= %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression GEQ expression                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression AND expression                 { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression OR expression                  { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+        ;
+
 expression:
             term                                { $$ = $1 ; }
 
@@ -225,6 +281,15 @@ t_keyword keywords [] = {     // define the keywords
     "int",         INTEGER,
     "puts",        PUTS,
     "printf",      PRINTF,
+    "<=",          LEQ,
+    ">=",          GEQ,
+    "&&",          AND,
+    "||",          OR,
+    "==",          EQ,
+    "!=",          NEQ,
+    "while",       WHILE,
+    "if",          IF,
+    "else",        ELSE,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
