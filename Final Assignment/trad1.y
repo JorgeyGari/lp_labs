@@ -44,6 +44,7 @@ typedef struct s_attr {
 %token AND           // token for &&
 %token IF            // token for keyword if
 %token ELSE          // token for keyword else
+%token FOR           // token for keyword for
 
 
 // Definitions for implicit attributes.
@@ -125,6 +126,9 @@ sentence:
         | INTEGER IDENTIF '=' assign               { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
                                                    $$.code = gen_code (temp) ; }
 
+        | IDENTIF '=' assign                       { sprintf (temp, "(setq %s %s", $1.code, $3.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
         | PRINTF '(' STRING ',' lexpression ')'    { sprintf (temp, "%s ", $5.code) ;
                                                    $$.code = gen_code (temp) ; }
 
@@ -136,7 +140,7 @@ assign:
         expression                                  { sprintf (temp, "%s)", $1.code) ;
 					                                $$.code = gen_code (temp) ; }
 
-	    | NUMBER ',' INTEGER IDENTIF '=' assign     { sprintf (temp, "%d) (setq %s %s", $1.value, $4.code, $6.code) ;
+	    | NUMBER ',' IDENTIF '=' assign             { sprintf (temp, "%d) (setq %s %s", $1.value, $3.code, $5.code) ;
 					                                $$.code = gen_code (temp) ; }
 	    ;
 
@@ -149,6 +153,10 @@ control:
 
         | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n%s\n%s\n)", $3.code, $6.code, $10.code) ;
                                                                     $$.code = gen_code (temp) ; }
+
+        | FOR '(' declare ';' condition ';' incdec ')' '{' body '}'                                                             
+                                                                    { sprintf (temp, "%s\n(loop while %s do %s\n%s", $3.code, $5.code, $10.code, $7.code) ;
+                                                                    $$.code = gen_code (temp) ;}
         ;
 
 condition:
@@ -179,6 +187,14 @@ condition:
         | expression OR expression                  { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
         ;
+
+incdec:
+            IDENTIF '=' IDENTIF '+' NUMBER      { sprintf (temp, "(setq %s (+ %s %d))", $1.code, $1.code, $4.value) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | IDENTIF '=' IDENTIF '-' NUMBER    { sprintf (temp, "(setq %s (- %s %d))", $1.code, $1.code, $4.value) ;
+                                                $$.code = gen_code (temp) ; }
+            ;
 
 expression:
             term                                { $$ = $1 ; }
@@ -290,6 +306,7 @@ t_keyword keywords [] = {     // define the keywords
     "while",       WHILE,
     "if",          IF,
     "else",        ELSE,
+    "for",         FOR,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
