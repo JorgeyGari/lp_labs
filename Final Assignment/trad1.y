@@ -76,7 +76,7 @@ typedef struct s_attr {
 %left EQ NEQ                    //
 %left '<' '>' LEQ GEQ           //
 %left '+' '-'                   //
-%left '*' '/'                   // 
+%left '*' '/' '%'               // 
 %left UNARY_SIGN                // highest precedence
 
 %%                            // Section 3 Grammar - Semantic Actions
@@ -98,11 +98,18 @@ bdeclare:
 
 declare:
 
-	    | INTEGER IDENTIF 			        { sprintf (temp, "(setq %s 0)", $2.code) ;
-					                        $$.code = gen_code (temp) ; }
+	    | INTEGER IDENTIF 			                { sprintf (temp, "(setq %s 0)", $2.code) ;
+					                                $$.code = gen_code (temp) ; }
 
-	    | INTEGER IDENTIF '=' NUMBER        { sprintf (temp, "(setq %s %d)", $2.code, $4.value) ;
-					                        $$.code = gen_code (temp) ; }
+	    | INTEGER IDENTIF '=' expression            { sprintf (temp, "(setq %s %d)", $2.code, $4.value) ;
+					                                $$.code = gen_code (temp) ; }
+
+        | INTEGER IDENTIF '[' expression ']'        { sprintf (temp, "(setq %s (make-array %s))", $2.code, $4.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF '[' expression ']' '=' expression { sprintf (temp, "(setf (aref %s %s) %s", $1.code, $3.code, $6.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
 	    ;
 
 body:  
@@ -127,6 +134,12 @@ sentence:
                                                    $$.code = gen_code (temp) ; }
 
         | IDENTIF '=' assign                       { sprintf (temp, "(setq %s %s", $1.code, $3.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | INTEGER IDENTIF '[' expression ']'       { sprintf (temp, "(setq %s (make-array %s))", $2.code, $4.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | IDENTIF '[' expression ']' '=' assign    { sprintf (temp, "(setf (aref %s %s) %s", $1.code, $3.code, $6.code) ;
                                                    $$.code = gen_code (temp) ; }
 
         | PRINTF '(' STRING ',' lexpression ')'    { sprintf (temp, "%s ", $5.code) ;
@@ -197,7 +210,11 @@ incdec:
             ;
 
 expression:
-            term                                { $$ = $1 ; }
+            term                                { $$ = $1 ; 
+                                                $$.code = gen_code ($1.code) ; }
+
+            | term '[' expression ']'           { sprintf (temp, "(aref %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
 
             | expression '+' expression         { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
@@ -221,7 +238,8 @@ lexpression:
 	    ;
 
 term:
-            operand                             { $$ = $1 ; }
+            operand                             { $$ = $1 ;
+                                                $$.code = gen_code ($1.code) ; }
 
             | '+' operand %prec UNARY_SIGN      { sprintf (temp, "(+ %s)", $2.code) ;
                                                 $$.code = gen_code (temp) ; }
@@ -239,7 +257,6 @@ operand:
                                         
             | '(' expression ')'        { $$ = $2 ; }
             ;
-
 
 %%                            // SECTION 4    Code in C
 
