@@ -45,6 +45,7 @@ typedef struct s_attr {
 %token IF            // token for keyword if
 %token ELSE          // token for keyword else
 %token FOR           // token for keyword for
+%token RETURN       // token for keyword return
 
 
 // Definitions for implicit attributes.
@@ -85,15 +86,22 @@ axiom:
         MAIN '(' ')' '{' body '}'              { printf ("(defun main ()\n%s\n)\n", $5.code) ;
 					                            $$.code = gen_code (temp) ; }
 
-	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s \n (defun main ()\n%s\n)\n", $1.code, $6.code) ;
-					                            $$.code = gen_code (temp) ; }
+	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s\n(defun main ()\n%s\n)\n", $1.code, $6.code) ;
+					                            $$.code = gen_code (temp) ; } // TODO: Add RETURN
 	    ;
 
 bdeclare:
         declare ';'				    { sprintf (temp, "%s ", $1.code) ;
                                     $$.code = gen_code (temp) ; }
+
 	    | declare ';' bdeclare		{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
 						            $$.code = gen_code (temp) ; }
+
+        | function                  { sprintf (temp, "%s ", $1.code) ;
+                                    $$.code = gen_code (temp) ; }
+
+        | function bdeclare         { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
+                                    $$.code = gen_code (temp) ; }
 	    ;
 
 declare:
@@ -109,8 +117,12 @@ declare:
 
         | IDENTIF '[' expression ']' '=' expression { sprintf (temp, "(setf (aref %s %s) %s", $1.code, $3.code, $6.code) ;
                                                     $$.code = gen_code (temp) ; }
-
 	    ;
+
+function:
+        IDENTIF '(' INTEGER IDENTIF ')' '{' body '}' { sprintf (temp, "(defun %s (%s)\n%s\n)\n", $3.code, $4.code, $7.code) ;
+                                                     $$.code = gen_code (temp) ; }
+        ;
 
 body:  
         sentence ';'            { sprintf (temp, "%s ", $1.code) ;
@@ -147,13 +159,16 @@ sentence:
 
         | PUTS '(' STRING ')'                      { sprintf (temp, "(print \"%s\") ", $3.code) ;
                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF '(' expression ')'               { sprintf (temp, "(%s %s) ", $1.code, $3.code) ;
+                                                   $$.code = gen_code (temp) ; }
         ;
 
 assign:
         expression                                  { sprintf (temp, "%s)", $1.code) ;
 					                                $$.code = gen_code (temp) ; }
 
-	    | NUMBER ',' IDENTIF '=' assign             { sprintf (temp, "%d) (setq %s %s", $1.value, $3.code, $5.code) ;
+	    | expression ',' IDENTIF '=' assign         { sprintf (temp, "%d) (setq %s %s", $1.value, $3.code, $5.code) ;
 					                                $$.code = gen_code (temp) ; }
 	    ;
 
@@ -164,7 +179,7 @@ control:
         | IF '(' condition ')' '{' body '}'                         { sprintf (temp, "(if %s\n%s\n)", $3.code, $6.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
-        | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n%s\n%s\n)", $3.code, $6.code, $10.code) ;
+        | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n(progn %s)\n(progn %s)\n)", $3.code, $6.code, $10.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
         | FOR '(' declare ';' condition ';' incdec ')' '{' body '}'                                                             
@@ -216,6 +231,9 @@ expression:
             | term '[' expression ']'           { sprintf (temp, "(aref %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
+            | term '(' args ')'                 { sprintf (temp, "(%s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
+
             | expression '+' expression         { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
@@ -227,6 +245,9 @@ expression:
 
             | expression '/' expression         { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
+
+            | expression '%' expression         { sprintf (temp, "(mod %s %s)", $1.code, $3.code) ;
+                                                $$.code = gen_code (temp) ; }
             ;
 
 lexpression:
@@ -236,6 +257,14 @@ lexpression:
 	    | expression ',' lexpression	    { sprintf (temp, "(print %s) %s ", $1.code, $3.code) ;
 					                        $$.code = gen_code (temp) ; }
 	    ;
+
+args:
+        expression                                  { sprintf (temp, "%s", $1.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression ',' args                       { sprintf (temp, "%s %s", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+        ;
 
 term:
             operand                             { $$ = $1 ;
@@ -324,6 +353,7 @@ t_keyword keywords [] = {     // define the keywords
     "if",          IF,
     "else",        ELSE,
     "for",         FOR,
+    "return",      RETURN,
     NULL,          0          // 0 to mark the end of the table
 } ;
 
@@ -427,8 +457,8 @@ int yylex ()
         i = 0 ;
         while (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
             (c >= '0' && c <= '9') || c == '_') && i < 255) {
-        temp_str [i++] = tolower (c) ; // ALL TO SMALL LETTERS
-        c = getchar () ;
+            temp_str [i++] = tolower (c) ; // ALL TO SMALL LETTERS
+            c = getchar () ;
     }
     temp_str [i] = '\0' ; // End of string
     ungetc (c, stdin) ; // return excess char
