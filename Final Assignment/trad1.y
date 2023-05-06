@@ -22,6 +22,8 @@ typedef struct s_attr {
     char *code ;   // - to pass IDENTIFIER names, and other translations 
 } t_attr ;
 
+// TODO: Add attribute that contains function name
+
 #define YYSTYPE t_attr     // stack of PDA has type t_attr
 
 %}
@@ -87,7 +89,7 @@ axiom:
 					                            $$.code = gen_code (temp) ; }
 
 	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s\n(defun main ()\n%s\n)\n", $1.code, $6.code) ;
-					                            $$.code = gen_code (temp) ; } // TODO: Add RETURN
+					                            $$.code = gen_code (temp) ; }
 	    ;
 
 bdeclare:
@@ -120,21 +122,31 @@ declare:
 	    ;
 
 function:
-        IDENTIF '(' INTEGER IDENTIF ')' '{' body '}' { sprintf (temp, "(defun %s (%s)\n%s\n)\n", $3.code, $4.code, $7.code) ;
-                                                     $$.code = gen_code (temp) ; }
+        IDENTIF '(' ')' '{' '}'                     { sprintf (temp, "(defun %s ()\n)\n", $1.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF '(' args ')' '{' '}'              { sprintf (temp, "(defun %s (%s)\n)\n", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF '(' ')' '{' body '}'              { sprintf (temp, "(defun %s ()\n%s\n)\n", $1.code, $5.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF '(' args ')' '{' body '}'         { sprintf (temp, "(defun %s (%s)\n%s\n)\n", $1.code, $3.code, $6.code) ;
+                                                    $$.code = gen_code (temp) ; }                                                   
+
         ;
 
 body:  
         sentence ';'            { sprintf (temp, "%s ", $1.code) ;
 						        $$.code = gen_code (temp) ; }
 
-	    | sentence ';' body    { sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+	    | sentence ';' body     { sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
 						        $$.code = gen_code (temp) ; }
 
         | control               { sprintf (temp, "%s ", $1.code) ;
                                 $$.code = gen_code (temp) ; }
         
-        | control body         { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
+        | control body          { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
                                 $$.code = gen_code (temp) ; }
 	    ;
 
@@ -160,7 +172,7 @@ sentence:
         | PUTS '(' STRING ')'                      { sprintf (temp, "(print \"%s\") ", $3.code) ;
                                                    $$.code = gen_code (temp) ; }
 
-        | IDENTIF '(' expression ')'               { sprintf (temp, "(%s %s) ", $1.code, $3.code) ;
+        | IDENTIF '(' lexpression ')'              { sprintf (temp, "(%s %s) ", $1.code, $3.code) ;
                                                    $$.code = gen_code (temp) ; }
         ;
 
@@ -231,7 +243,7 @@ expression:
             | term '[' expression ']'           { sprintf (temp, "(aref %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
-            | term '(' args ')'                 { sprintf (temp, "(%s %s)", $1.code, $3.code) ;
+            | term '(' lexpression ')'          { sprintf (temp, "(%s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
             | expression '+' expression         { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
@@ -259,7 +271,13 @@ lexpression:
 	    ;
 
 args:
-        expression                                  { sprintf (temp, "%s", $1.code) ;
+        INTEGER IDENTIF                             { sprintf (temp, "%s", $2.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | INTEGER IDENTIF ',' args                  { sprintf (temp, "%s %s", $2.code, $4.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression                                { sprintf (temp, "%s", $1.code) ;
                                                     $$.code = gen_code (temp) ; }
 
         | expression ',' args                       { sprintf (temp, "%s %s", $1.code, $3.code) ;
