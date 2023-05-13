@@ -19,10 +19,9 @@ char temp [2048] ;
 
 typedef struct s_attr {
     int value ;    // - Numeric value of a NUMBER 
-    char *code ;   // - to pass IDENTIFIER names, and other translations 
+    char *code ;   // - to pass IDENTIFIER names, and other translations
+    char *function_name ;  // - to pass function name 
 } t_attr ;
-
-// TODO: Add attribute that contains function name
 
 #define YYSTYPE t_attr     // stack of PDA has type t_attr
 
@@ -86,7 +85,8 @@ typedef struct s_attr {
 
 axiom:  
         MAIN '(' ')' '{' body '}'              { printf ("(defun main ()\n%s\n)\n", $5.code) ;
-					                            $$.code = gen_code (temp) ; }
+					                            $$.code = gen_code (temp) ;
+                                                $$.function_name = "main" ; }
 
 	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s\n(defun main ()\n%s\n)\n", $1.code, $6.code) ;
 					                            $$.code = gen_code (temp) ; }
@@ -123,32 +123,39 @@ declare:
 
 function:
         IDENTIF '(' ')' '{' '}'                     { sprintf (temp, "(defun %s ()\n)\n", $1.code) ;
-                                                    $$.code = gen_code (temp) ; }
+                                                    $$.code = gen_code (temp) ;
+                                                    $$.function_name = $1.code ;}
 
-        | IDENTIF '(' args ')' '{' '}'              { sprintf (temp, "(defun %s (%s)\n)\n", $1.code, $3.code) ;
-                                                    $$.code = gen_code (temp) ; }
+        | IDENTIF '(' args ')' '{'  '}'             { sprintf (temp, "(defun %s (%s)\n)\n", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ;
+                                                    $$.function_name = $1.code ;}
 
         | IDENTIF '(' ')' '{' body '}'              { sprintf (temp, "(defun %s ()\n%s\n)\n", $1.code, $5.code) ;
-                                                    $$.code = gen_code (temp) ; }
+                                                    $$.code = gen_code (temp) ; 
+                                                    $$.function_name = $1.code ; }
 
         | IDENTIF '(' args ')' '{' body '}'         { sprintf (temp, "(defun %s (%s)\n%s\n)\n", $1.code, $3.code, $6.code) ;
-                                                    $$.code = gen_code (temp) ; }                                                   
+                                                    $$.code = gen_code (temp) ; 
+                                                    $$.function_name = $1.code ; }
 
         ;
 
 body:  
         sentence ';'            { sprintf (temp, "%s ", $1.code) ;
-						        $$.code = gen_code (temp) ; }
+						        $$.code = gen_code (temp) ;
+                                $$.function_name = $0.function_name ;}
 
 	    | sentence ';' body     { sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
-						        $$.code = gen_code (temp) ; }
+						        $$.code = gen_code (temp) ;
+                                $$.function_name = $0.function_name ;}
 
         | control               { sprintf (temp, "%s ", $1.code) ;
-                                $$.code = gen_code (temp) ; }
+                                $$.code = gen_code (temp) ; 
+                                $$.function_name = $0.function_name ;}
         
         | control body          { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
                                 $$.code = gen_code (temp) ; }
-	    ;
+        ;
 
 sentence:
         INTEGER IDENTIF                            { sprintf (temp, "(setq %s 0)", $2.code) ;
@@ -173,6 +180,9 @@ sentence:
                                                    $$.code = gen_code (temp) ; }
 
         | IDENTIF '(' lexpression ')'              { sprintf (temp, "(%s %s) ", $1.code, $3.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | RETURN expression                        { sprintf (temp, "(return-from %s %s)", $0.function_name, $2.code) ;
                                                    $$.code = gen_code (temp) ; }
         ;
 
