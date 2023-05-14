@@ -1308,7 +1308,7 @@ yyreduce:
   case 2: /* axiom: MAIN '(' ')' '{' body '}'  */
 #line 89 "trad1.y"
                                                 { printf ("(defun main ()\n%s\n)\n", yyvsp[-1].code) ;
-                                                fun_name = "main" ;
+                                                fun_name = "main" ; // FIXME: We are processing the function name after the body, so there is a delay
 					                            yyval.code = gen_code (temp) ; }
 #line 1314 "trad1.tab.c"
     break;

@@ -1,1 +1,9 @@
-
+(setq a (make-array 12)) 
+(defun main ()
+(setq b (make-array 12)) 
+(setf (aref b 0) 1) 
+(setf (aref b 1) (aref a 2)) 
+(setf (aref b 2) (+ (aref b 0) (aref b 1))) 
+(setf (aref b 3) (aref a (+ 1 3))) 
+(setf (aref b 4) (+ (aref b 3) (aref b (+ 2 (aref a 0)))))      
+)
