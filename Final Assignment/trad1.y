@@ -15,7 +15,7 @@ char *char_to_string (char) ;
 
 char temp [2048] ;
 
-char *fun_name ;    // Global variable to store the name of the function being processed
+char fun_name [256] ;    // Global variable to store the name of the function being processed
 
 // Definitions for explicit attributes
 
@@ -86,25 +86,25 @@ typedef struct s_attr {
 %%                            // Section 3 Grammar - Semantic Actions
 
 axiom:  
-        MAIN '(' ')' '{' body '}'               { printf ("(defun main ()\n%s\n)\n", $5.code) ;
-                                                fun_name = "main" ; // FIXME: We are processing the function name after the body, so there is a delay
-					                            $$.code = gen_code (temp) ; }
+        MAIN                                { strcpy (fun_name, $1.code) ; }
+        '(' ')' '{' body '}'                { printf ("(defun main ()\n%s\n)\n", $6.code) ; 
+                                            $$.code = gen_code (temp) ; }
 
-	    | bdeclare MAIN '(' ')' '{' body '}'	{ printf ("%s\n(defun main ()\n%s\n)\n", $1.code, $6.code) ;
-					                            $$.code = gen_code (temp) ; }
+	    | bdeclare MAIN                     { strcpy (fun_name, "main") ; }
+         '(' ')' '{' body '}'	            { printf ("%s\n(defun main ()\n%s\n)\n", $1.code, $7.code) ; }
 	    ;
 
 bdeclare:
         declare ';'				    { sprintf (temp, "%s ", $1.code) ;
                                     $$.code = gen_code (temp) ; }
 
-	    | declare ';' bdeclare		{ sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+	    | declare ';' bdeclare		{ sprintf (temp, "%s\n%s ", $1.code, $3.code) ;
 						            $$.code = gen_code (temp) ; }
 
         | function                  { sprintf (temp, "%s ", $1.code) ;
                                     $$.code = gen_code (temp) ; }
 
-        | function bdeclare         { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
+        | function bdeclare         { sprintf (temp, "%s\n%s ", $1.code, $2.code) ;
                                     $$.code = gen_code (temp) ; }
 	    ;
 
@@ -124,35 +124,35 @@ declare:
 	    ;
 
 function:
-        IDENTIF '(' ')' '{' '}'                     { sprintf (temp, "(defun %s ()\n)\n", $1.code) ;
-                                                    fun_name = $1.code ;
+        IDENTIF                                     { strcpy (fun_name, $1.code) ; }
+        rfunction                                   { sprintf (temp, "(defun %s%s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
-
-        | IDENTIF '(' args ')' '{'  '}'             { sprintf (temp, "(defun %s (%s)\n)\n", $1.code, $3.code) ;
-                                                    fun_name = $1.code ;
-                                                    $$.code = gen_code (temp) ; }
-
-        | IDENTIF '(' ')' '{' body '}'              { sprintf (temp, "(defun %s ()\n%s\n)\n", $1.code, $5.code) ;
-                                                    fun_name = $1.code ;
-                                                    $$.code = gen_code (temp) ; }
-
-        | IDENTIF '(' args ')' '{' body '}'         { sprintf (temp, "(defun %s (%s)\n%s\n)\n", $1.code, $3.code, $6.code) ;
-                                                    fun_name = $1.code ;
-                                                    $$.code = gen_code (temp) ; }
-
         ;
 
+rfunction:
+        '(' ')' '{' '}'                             { sprintf (temp, "() )") ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | '(' args ')' '{'  '}'                     { sprintf (temp, "(%s) )", $2.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | '(' ')' '{' body '}'                      { sprintf (temp, "()\n%s", $4.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | '(' args ')' '{' body '}'                 { sprintf (temp, "(%s)\n%s", $2.code, $5.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
 body:  
-        sentence ';'            { sprintf (temp, "%s ", $1.code) ;
+        sentence ';'            { sprintf (temp, "%s", $1.code) ;
 						        $$.code = gen_code (temp) ; }
 
-	    | sentence ';' body     { sprintf (temp, "%s \n%s ", $1.code, $3.code) ;
+	    | sentence ';' body     { sprintf (temp, "%s\n%s ", $1.code, $3.code) ;
 						        $$.code = gen_code (temp) ; }
 
-        | control               { sprintf (temp, "%s ", $1.code) ;
+        | control               { sprintf (temp, "%s", $1.code) ;
                                 $$.code = gen_code (temp) ; }
         
-        | control body          { sprintf (temp, "%s \n%s ", $1.code, $2.code) ;
+        | control body          { sprintf (temp, "%s\n%s ", $1.code, $2.code) ;
                                 $$.code = gen_code (temp) ; }
         ;
 
@@ -178,6 +178,9 @@ sentence:
         | PUTS '(' STRING ')'                      { sprintf (temp, "(print \"%s\") ", $3.code) ;
                                                    $$.code = gen_code (temp) ; }
 
+        | IDENTIF '(' ')'                          { sprintf (temp, "(%s) ", $1.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
         | IDENTIF '(' args ')'                     { sprintf (temp, "(%s %s) ", $1.code, $3.code) ;
                                                    $$.code = gen_code (temp) ; }
 
@@ -197,51 +200,55 @@ control:
         WHILE '(' condition ')' '{' body '}'                        { sprintf (temp, "(loop while %s do %s\n)", $3.code, $6.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
-        | IF '(' condition ')' '{' body '}'                         { sprintf (temp, "(if %s\n%s\n)", $3.code, $6.code) ;
+        | IF '(' condition ')' '{' body '}'                         { sprintf (temp, "(if %s\n(progn %s)\n)", $3.code, $6.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
         | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n(progn %s)\n(progn %s)\n)", $3.code, $6.code, $10.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
         | FOR '(' declare ';' condition ';' incdec ')' '{' body '}'                                                             
-                                                                    { sprintf (temp, "%s\n(loop while %s do %s\n%s", $3.code, $5.code, $10.code, $7.code) ;
+                                                                    { sprintf (temp, "%s\n(loop while %s do %s\n%s)", $3.code, $5.code, $10.code, $7.code) ;
+                                                                    $$.code = gen_code (temp) ;}
+
+        | FOR '(' IDENTIF '=' expression ';' condition ';' incdec ')' '{' body '}'                                             
+                                                                    { sprintf (temp, "(setq %s %s)\n(loop while %s do %s\n%s)", $3.code, $5.code, $7.code, $12.code, $9.code) ;
                                                                     $$.code = gen_code (temp) ;}
         ;
 
 condition:
-        expression                                  { sprintf (temp, "(/= 0 %s)", $1.code) ;
+        expression                                  { sprintf (temp, "%s", $1.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression EQ expression                  { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
+        | condition EQ condition                  { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression NEQ expression                 { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
+        | condition NEQ condition                 { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression '<' expression                 { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
+        | condition '<' condition                 { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression '>' expression                 { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
+        | condition '>' condition                 { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression LEQ expression                 { sprintf (temp, "(<= %s %s)", $1.code, $3.code) ;
+        | condition LEQ condition                 { sprintf (temp, "(<= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression GEQ expression                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
+        | condition GEQ condition                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression AND expression                 { sprintf (temp, "(and (/= 0 %s) (/= 0 %s))", $1.code, $3.code) ;
+        | condition AND condition                 { sprintf (temp, "(and %s 0 %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | expression OR expression                  { sprintf (temp, "(or (/= 0 %s) (/= 0 %s))", $1.code, $3.code) ;
+        | condition OR condition                  { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
         ;
 
 incdec:
-            IDENTIF '=' IDENTIF '+' NUMBER      { sprintf (temp, "(setq %s (+ %s %d))", $1.code, $1.code, $4.value) ;
+            IDENTIF '=' IDENTIF '+' NUMBER      { sprintf (temp, "(setq %s (+ %s %d))", $1.code, $1.code, $5.value) ;
                                                 $$.code = gen_code (temp) ; }
 
-            | IDENTIF '=' IDENTIF '-' NUMBER    { sprintf (temp, "(setq %s (- %s %d))", $1.code, $1.code, $4.value) ;
+            | IDENTIF '=' IDENTIF '-' NUMBER    { sprintf (temp, "(setq %s (- %s %d))", $1.code, $1.code, $5.value) ;
                                                 $$.code = gen_code (temp) ; }
             ;
 
@@ -252,7 +259,10 @@ expression:
             | term '[' expression ']'           { sprintf (temp, "(aref %s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
-            | term '(' lexpression ')'          { sprintf (temp, "(%s %s)", $1.code, $3.code) ;
+            | term '(' ')'                      { sprintf (temp, "(%s)", $1.code) ;
+                                                $$.code = gen_code (temp) ; }
+
+            | term '(' args ')'                 { sprintf (temp, "(%s %s)", $1.code, $3.code) ;
                                                 $$.code = gen_code (temp) ; }
 
             | expression '+' expression         { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
