@@ -3,3 +3,5 @@ trad3*
 output*
 testing_slow.sh
 trad1 copy.y
+*.exe
+test.c

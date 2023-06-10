@@ -216,28 +216,28 @@ control:
         ;
 
 condition:
-        expression                                  { sprintf (temp, "%s", $1.code) ;
+        expression                                  { sprintf (temp, "(/= 0 %s)", $1.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition EQ condition                  { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
+        | expression EQ expression                  { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition NEQ condition                 { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
+        | expression NEQ expression                 { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition '<' condition                 { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
+        | expression '<' expression                 { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition '>' condition                 { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
+        | expression '>' expression                 { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition LEQ condition                 { sprintf (temp, "(<= %s %s)", $1.code, $3.code) ;
+        | expression LEQ expression                 { sprintf (temp, "(<= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition GEQ condition                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
+        | expression GEQ expression                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition AND condition                 { sprintf (temp, "(and %s 0 %s)", $1.code, $3.code) ;
+        | condition AND condition                 { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
         | condition OR condition                  { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
