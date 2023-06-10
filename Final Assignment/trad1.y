@@ -160,6 +160,9 @@ sentence:
         INTEGER IDENTIF                            { sprintf (temp, "(setq %s 0)", $2.code) ;
                                                    $$.code = gen_code (temp) ; }
 
+        | INTEGER IDENTIF ',' moreid              { sprintf (temp, "(setq %s 0)\n%s", $2.code, $4.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
         | INTEGER IDENTIF '=' assign               { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
                                                    $$.code = gen_code (temp) ; }
 
@@ -185,6 +188,14 @@ sentence:
                                                    $$.code = gen_code (temp) ; }
 
         | RETURN expression                        { sprintf (temp, "(return-from %s %s)", fun_name, $2.code) ;
+                                                   $$.code = gen_code (temp) ; }
+        ;
+
+moreid:
+        IDENTIF                                     { sprintf (temp, "(setq %s 0)", $1.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | IDENTIF ',' moreid                        { sprintf (temp, "(setq %s 0)\n%s", $1.code, $3.code) ;
                                                    $$.code = gen_code (temp) ; }
         ;
 

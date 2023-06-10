@@ -33,3 +33,5 @@ echo "Testing primos6.c"
 ./testing.sh test_scripts/*/primos6.c
 echo "Testing fibonacci3.c"
 ./testing.sh test_scripts/*/fibonacci3.c
+echo "Testing return.c"
+./testing.sh test_scripts/*/return.c
