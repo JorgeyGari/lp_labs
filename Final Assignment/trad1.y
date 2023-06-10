@@ -189,6 +189,12 @@ sentence:
 
         | RETURN expression                        { sprintf (temp, "(return-from %s %s)", fun_name, $2.code) ;
                                                    $$.code = gen_code (temp) ; }
+
+        | RETURN expression ',' multexpr           { sprintf (temp, "(return-from %s (values %s %s))", fun_name, $2.code, $4.code) ;
+                                                   $$.code = gen_code (temp) ; }
+
+        | IDENTIF ',' multid '=' multexpr           { sprintf (temp, "(setf (values %s %s) %s)", $1.code, $3.code, $5.code) ;
+                                                    $$.code = gen_code (temp) ; }
         ;
 
 moreid:
@@ -197,6 +203,22 @@ moreid:
 
         | IDENTIF ',' moreid                        { sprintf (temp, "(setq %s 0)\n%s", $1.code, $3.code) ;
                                                    $$.code = gen_code (temp) ; }
+        ;
+
+multid:
+        IDENTIF                                     { sprintf (temp, "%s", $1.code) ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | IDENTIF ',' multid                        { sprintf (temp, "%s %s", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
+        ;
+
+multexpr:
+        expression                                  { $$ = $1 ;
+                                                    $$.code = gen_code (temp) ; }
+
+        | expression ',' multexpr                   { sprintf (temp, "%s %s", $1.code, $3.code) ;
+                                                    $$.code = gen_code (temp) ; }
         ;
 
 assign:
