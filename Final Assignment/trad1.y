@@ -253,8 +253,8 @@ control:
         | IF '(' condition ')' '{' body '}' ELSE '{' body '}'       { sprintf (temp, "(if %s\n(progn %s)\n(progn %s)\n)", $3.code, $6.code, $10.code) ;
                                                                     $$.code = gen_code (temp) ; }
 
-        | FOR '(' declare ';' condition ';' incdec ')' '{' body '}'                                                             
-                                                                    { sprintf (temp, "%s\n(loop while %s do %s\n%s)", $3.code, $5.code, $10.code, $7.code) ;
+        | FOR '(' INTEGER IDENTIF '=' expression ';' condition ';' incdec ')' '{' body '}'                                                             
+                                                                    { sprintf (temp, "(let ((%s %s))\n(loop while %s do %s\n%s))", $4.code, $6.code, $8.code, $13.code, $10.code) ;
                                                                     $$.code = gen_code (temp) ;}
 
         | FOR '(' IDENTIF '=' expression ';' condition ';' incdec ')' '{' body '}'                                             
@@ -284,10 +284,10 @@ condition:
         | expression GEQ expression                 { sprintf (temp, "(>= %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition AND condition                 { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
+        | condition AND condition                   { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
 
-        | condition OR condition                  { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
+        | condition OR condition                    { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
                                                     $$.code = gen_code (temp) ; }
         ;
 
