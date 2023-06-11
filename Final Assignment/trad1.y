@@ -160,6 +160,12 @@ body:
 
         | localvar ';' body     { sprintf (temp, "(let (%s)\n%s\n)", $1.code, $3.code) ;
                                 $$.code = gen_code (temp) ; }
+
+        | '{' body '}'          { sprintf (temp, "%s", $2.code) ;
+                                $$.code = gen_code (temp) ; }
+
+        | '{' body '}' body     { sprintf (temp, "%s\n%s ", $2.code, $4.code) ;
+                                $$.code = gen_code (temp) ; }
         ;
 
 localvar:
