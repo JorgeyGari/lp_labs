@@ -154,26 +154,34 @@ body:
         
         | control body          { sprintf (temp, "%s\n%s ", $1.code, $2.code) ;
                                 $$.code = gen_code (temp) ; }
+
+        | localvar ';'          { sprintf (temp, "(let (%s)) ", $1.code) ;
+                                $$.code = gen_code (temp) ; }
+
+        | localvar ';' body     { sprintf (temp, "(let (%s)\n%s\n)", $1.code, $3.code) ;
+                                $$.code = gen_code (temp) ; }
+        ;
+
+localvar:
+        INTEGER IDENTIF                            { sprintf (temp, "(%s 0)", $2.code) ;
+                                                   $$.code = gen_code (temp) ; }
+                                                   
+        | INTEGER IDENTIF '=' assign               { sprintf (temp, "(%s %s", $2.code, $4.code) ;
+                                                   $$.code = gen_code (temp) ; }
         ;
 
 sentence:
-        INTEGER IDENTIF                            { sprintf (temp, "(setq %s 0)", $2.code) ;
+        INTEGER IDENTIF ',' moreid                 { sprintf (temp, "(setq %s 0)\n%s", $2.code, $4.code) ;
                                                    $$.code = gen_code (temp) ; }
 
-        | INTEGER IDENTIF ',' moreid              { sprintf (temp, "(setq %s 0)\n%s", $2.code, $4.code) ;
-                                                   $$.code = gen_code (temp) ; }
-
-        | INTEGER IDENTIF '=' assign               { sprintf (temp, "(setq %s %s", $2.code, $4.code) ;
-                                                   $$.code = gen_code (temp) ; }
-
-        | IDENTIF '=' assign                       { sprintf (temp, "(setq %s %s", $1.code, $3.code) ;
+        | IDENTIF '=' expression                   { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ;
                                                    $$.code = gen_code (temp) ; }
 
         | INTEGER IDENTIF '[' expression ']'       { sprintf (temp, "(setq %s (make-array %s))", $2.code, $4.code) ;
                                                    $$.code = gen_code (temp) ; }
 
-        | IDENTIF '[' expression ']' '=' assign    { sprintf (temp, "(setf (aref %s %s) %s", $1.code, $3.code, $6.code) ;
-                                                   $$.code = gen_code (temp) ; }
+        | IDENTIF '[' expression ']' '=' expression     { sprintf (temp, "(setf (aref %s %s) %s)", $1.code, $3.code, $6.code) ;
+                                                        $$.code = gen_code (temp) ; }
 
         | PRINTF '(' STRING ',' lexpression ')'    { sprintf (temp, "%s ", $5.code) ;
                                                    $$.code = gen_code (temp) ; }
@@ -225,7 +233,7 @@ assign:
         expression                                  { sprintf (temp, "%s)", $1.code) ;
 					                                $$.code = gen_code (temp) ; }
 
-	    | expression ',' IDENTIF '=' assign         { sprintf (temp, "%d) (setq %s %s", $1.value, $3.code, $5.code) ;
+	    | expression ',' IDENTIF '=' assign         { sprintf (temp, "%d) (%s %s", $1.value, $3.code, $5.code) ;
 					                                $$.code = gen_code (temp) ; }
 	    ;
 
